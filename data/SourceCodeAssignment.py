@@ -123,3 +123,57 @@ print(f"Random Forest - Average R²: {np.mean(rf_r2_scores):.3f}")
 
 print("Random Forest - Cross-validated RMSE scores:", rf_rmse_scores)
 print(f"Random Forest - Average RMSE: {np.mean(rf_rmse_scores):.2f}")
+
+# SVR Model
+from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
+
+# Updated preprocessor with scaling for numeric features
+preprocessor_svr = ColumnTransformer(
+    transformers=[
+        ('num', StandardScaler(), numeric_features),
+        ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)
+    ]
+)
+
+# SVR pipeline
+svr_pipeline = Pipeline(steps=[
+    ('preprocessor', preprocessor_svr),
+    ('regressor', SVR(kernel='rbf', C=1.0, epsilon=0.2))
+])
+
+# Train-test split (already done, reused)
+# X_train, X_test, y_train, y_test
+
+# Fit the pipeline
+svr_pipeline.fit(X_train, y_train)
+
+# Predict and evaluate
+y_pred_svr = svr_pipeline.predict(X_test)
+rmse_svr = np.sqrt(mean_squared_error(y_test, y_pred_svr))
+r2_svr = r2_score(y_test, y_pred_svr)
+
+# Cross-validated evaluation
+cv_r2_svr = cross_val_score(svr_pipeline, X, y, cv=cv, scoring='r2')
+cv_rmse_svr = np.sqrt(-cross_val_score(svr_pipeline, X, y, cv=cv, scoring='neg_mean_squared_error'))
+
+# Output results
+print(f"SVR RMSE: {rmse_svr:.2f}")
+print(f"SVR R² Score: {r2_svr:.3f}")
+print("SVR Cross-validated R² scores:", cv_r2_svr)
+print(f"SVR Average R²: {np.mean(cv_r2_svr):.3f}")
+print("SVR Cross-validated RMSE scores:", cv_rmse_svr)
+print(f"SVR Average RMSE: {np.mean(cv_rmse_svr):.2f}")
+
+
+# Comparison results table for all 3 models
+comparison_data = {
+    "Model": ["Linear Regression", "Random Forest", "SVR (RBF Kernel)"],
+    "Test R²": [r2, None, r2_svr],
+    "Test RMSE": [rmse, None, rmse_svr],
+    "CV Avg R²": [np.mean(cv_r2_scores), np.mean(rf_r2_scores), np.mean(cv_r2_svr)],
+    "CV Avg RMSE": [np.mean(cv_rmse_scores), np.mean(rf_rmse_scores), np.mean(cv_rmse_svr)]
+}
+
+comparison_df = pd.DataFrame(comparison_data)
+print(comparison_df)
