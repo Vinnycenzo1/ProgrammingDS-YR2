@@ -17,17 +17,17 @@ data = pd.read_csv('TaxiData.csv')
 print(data.head(6))
 print(data.info())
 
-# As there are a few '?' in my data we need to remove them
+# As there are a few '?' in the data we need to remove them
 data.replace('?', np.nan, inplace=True)
 
 # Remove rows where 'datetime' is NA
 data = data[data['datetime'] != 'NA']
 
-# Parse the datetime column
-data['datetime'] = pd.to_datetime(data['datetime'], format='%d/%m/%Y %H:%M')
-
 # Remove any rows with missing data
 data = data.dropna(subset=['price', 'distance', 'temperature', 'windSpeed', 'visibility'])
+
+# Parse the datetime column
+data['datetime'] = pd.to_datetime(data['datetime'], format='%d/%m/%Y %H:%M')
 
 # This extracts time features
 data['hour'] = data['datetime'].dt.hour
@@ -45,7 +45,7 @@ categorical_features += ['source', 'destination']
 data['windBearing'] = pd.to_numeric(data['windBearing'], errors='coerce')
 data['humidity'] = pd.to_numeric(data['humidity'], errors='coerce')
 
-# Replace '?' or any invalid values (if needed)
+# Replace '?' or any invalid values
 data.replace('?', np.nan, inplace=True)
 
 # Drop rows with missing values in new features
