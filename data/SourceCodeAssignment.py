@@ -100,7 +100,7 @@ cv = KFold(n_splits=5, shuffle=True, random_state=42)
 # Get R^2 scores across 5 folds
 cv_r2_scores = cross_val_score(pipeline, X, y, cv=cv, scoring='r2')
 
-# Get negative MSE (so it takes negative to make it positive)
+# Get negative MSE
 cv_neg_mse_scores = cross_val_score(pipeline, X, y, cv=cv, scoring='neg_mean_squared_error')
 cv_rmse_scores = np.sqrt(-cv_neg_mse_scores)
 
@@ -140,9 +140,6 @@ svr_pipeline = Pipeline(steps=[
     ('preprocessor', preprocessor_svr),
     ('regressor', SVR(kernel='rbf', C=1.0, epsilon=0.2))
 ])
-
-# Train-test split (already done, reused)
-# X_train, X_test, y_train, y_test
 
 # Fit the pipeline
 svr_pipeline.fit(X_train, y_train)
@@ -214,7 +211,7 @@ def predict_fare(hour, source, destination, cab_type, name, distance, temperatur
 
     }])
 
-    return rf_pipeline.predict(input_df)[0]  # or use your best model
+    return rf_pipeline.predict(input_df)[0] 
 
 # Drop down options
 cab_types = list(data['cab_type'].unique())
@@ -243,3 +240,5 @@ output = gr.Number(label="Predicted Price ($)")
 app = gr.Interface(fn=predict_fare, inputs=inputs, outputs=output, title="Taxi Fare Predictor")
 
 app.launch()
+
+# The use of OpenAI helped with errors in my code, create graphs/comparison tables and clean code and explain results.
