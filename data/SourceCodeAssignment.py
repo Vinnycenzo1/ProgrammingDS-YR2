@@ -11,6 +11,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
 
 # Read the taxi data
 data = pd.read_csv('TaxiData.csv')
@@ -69,7 +71,7 @@ preprocessor = ColumnTransformer(
     remainder='passthrough'  # keep numeric features
 )
 
-# Create pipeline
+# Linear Regression pipeline
 pipeline = Pipeline(steps=[
     ('preprocessor', preprocessor),
     ('regressor', LinearRegression())
@@ -125,9 +127,6 @@ print("Random Forest - Cross-validated RMSE scores:", rf_rmse_scores)
 print(f"Random Forest - Average RMSE: {np.mean(rf_rmse_scores):.2f}")
 
 # SVR Model
-from sklearn.svm import SVR
-from sklearn.preprocessing import StandardScaler
-
 # Updated preprocessor with scaling for numeric features
 preprocessor_svr = ColumnTransformer(
     transformers=[
@@ -136,7 +135,7 @@ preprocessor_svr = ColumnTransformer(
     ]
 )
 
-# SVR pipeline
+# Support Vector Regression pipeline
 svr_pipeline = Pipeline(steps=[
     ('preprocessor', preprocessor_svr),
     ('regressor', SVR(kernel='rbf', C=1.0, epsilon=0.2))
@@ -169,11 +168,78 @@ print(f"SVR Average RMSE: {np.mean(cv_rmse_svr):.2f}")
 # Comparison results table for all 3 models
 comparison_data = {
     "Model": ["Linear Regression", "Random Forest", "SVR (RBF Kernel)"],
-    "Test R²": [r2, None, r2_svr],
-    "Test RMSE": [rmse, None, rmse_svr],
     "CV Avg R²": [np.mean(cv_r2_scores), np.mean(rf_r2_scores), np.mean(cv_r2_svr)],
     "CV Avg RMSE": [np.mean(cv_rmse_scores), np.mean(rf_rmse_scores), np.mean(cv_rmse_svr)]
 }
 
 comparison_df = pd.DataFrame(comparison_data)
 print(comparison_df)
+
+# Visualisation Graphs
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Plot R² comparison
+plt.figure(figsize=(8, 4))
+sns.barplot(data=comparison_df, x="Model", y="CV Avg R²", palette="Blues_d")
+plt.title("Cross-Validated R² by Model")
+plt.ylim(0, 1)
+plt.ylabel("R² Score")
+plt.grid(True)
+plt.show()
+
+# Plot RMSE comparison
+plt.figure(figsize=(8, 4))
+sns.barplot(data=comparison_df, x="Model", y="CV Avg RMSE", palette="Reds_d")
+plt.title("Cross-Validated RMSE by Model")
+plt.ylabel("RMSE ($)")
+plt.grid(True)
+plt.show()
+
+# GUI Creation
+def predict_fare(hour, source, destination, cab_type, name, distance, temperature, short_summary, humidity, windSpeed, visibility, windBearing):
+    input_df = pd.DataFrame([{
+        'hour': hour,
+        'source': source,
+        'destination': destination,
+        'cab_type': cab_type,
+        'name': name,
+        'distance': distance,
+        'temperature': temperature,
+        'short_summary': short_summary,
+        'humidity': humidity,
+        'windSpeed': windSpeed,
+        'visibility': visibility,
+        'windBearing': windBearing
+
+    }])
+
+    return rf_pipeline.predict(input_df)[0]  # or use your best model
+
+# Drop down options
+cab_types = list(data['cab_type'].unique())
+names = list(data['name'].unique())
+summaries = list(data['short_summary'].unique())
+sources = list(data['source'].unique())
+destinations = list(data['destination'].unique())
+
+inputs = [
+    gr.Slider(0, 23, step=1, label="Hour of Day"),
+    gr.Dropdown(sources, label="Pickup Location"),
+    gr.Dropdown(destinations, label="Drop-off Location"),
+    gr.Dropdown(cab_types, label="Cab Type"),
+    gr.Dropdown(names, label="Cab Name"),
+    gr.Number(label="Distance (km)"),
+    gr.Number(label="Temperature (°F)"),
+    gr.Dropdown(summaries, label="Weather Summary"),
+    gr.Number(label="Humidity (0-1)"),
+    gr.Number(label="Wind Speed (km/h)"),
+    gr.Number(label="Visibility (km)"),
+    gr.Number(label="Wind Bearing (°)")
+]
+
+output = gr.Number(label="Predicted Price ($)")
+
+app = gr.Interface(fn=predict_fare, inputs=inputs, outputs=output, title="Taxi Fare Predictor")
+
+app.launch()
